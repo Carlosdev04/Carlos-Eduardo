@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ProteínaGestão • Rendimento & Estoque</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap');
+        body { font-family: 'Inter', system_ui, sans-serif; }
+        .header-font { font-family: 'Space Grotesk', sans-serif; }
+        .modal { animation: modalPop 0.3s ease; }
+        @keyframes modalPop { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    </style>
+</head>
+<body class="bg-white text-slate-900">
+
+    <!-- HEADER -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-8 py-5 flex items-center justify-between">
+            <div class="flex items-center gap-x-3">
+                <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center text-white text-2xl">🥩</div>
+                <h1 class="header-font text-3xl tracking-[-1px]">ProteínaGestão</h1>
+                <span class="text-emerald-600 text-sm font-medium px-3 py-1 bg-emerald-100 rounded-3xl">Maragogi • AL</span>
+            </div>
+            <div class="flex items-center gap-x-8 text-sm">
+                <div onclick="navigateTo(0)" class="nav-item flex items-center gap-x-2 cursor-pointer hover:text-emerald-600 transition-colors active">🏠 Início</div>
+                <div onclick="navigateTo(1)" class="nav-item flex items-center gap-x-2 cursor-pointer hover:text-emerald-600 transition-colors">🥩 Proteínas</div>
+                <div onclick="navigateTo(2)" class="nav-item flex items-center gap-x-2 cursor-pointer hover:text-emerald-600 transition-colors">⚙️ Processamento</div>
+                <div onclick="navigateTo(3)" class="nav-item flex items-center gap-x-2 cursor-pointer hover:text-emerald-600 transition-colors">📦 Estoque</div>
+                <div class="flex items-center gap-x-3 bg-emerald-50 rounded-3xl pl-2 pr-5 py-1">
+                    <div class="w-8 h-8 bg-emerald-500 rounded-2xl flex items-center justify-center text-white text-xl">👨‍🍳</div>
+                    <div><p class="text-sm font-medium">Carlos</p></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-7xl mx-auto px-8 py-8">
+
+        <!-- PÁGINA INÍCIO -->
+        <div id="page-0" class="page">
+            <div class="flex justify-between items-end mb-8">
+                <div>
+                    <h2 class="text-4xl header-font tracking-[-1px]">Bem-vindo, Carlos!</h2>
+                    <p class="text-slate-500">18 de abril de 2026 • Panorama do dia</p>
+                </div>
+                <button onclick="navigateTo(2)" class="bg-emerald-500 hover:bg-emerald-600 px-8 py-4 rounded-3xl text-white font-semibold flex items-center gap-x-3">
+                    <i class="fa-solid fa-plus"></i> NOVO PROCESSAMENTO
+                </button>
+            </div>
+            <div class="grid grid-cols-12 gap-6">
+                <div class="col-span-3 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">Proteínas<br><span id="dash-proteinas" class="text-6xl font-semibold text-emerald-600">12</span></div>
+                <div class="col-span-3 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">Estoque total<br><span id="dash-estoque-kg" class="text-6xl font-semibold">87,4 kg</span></div>
+                <div class="col-span-3 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">Rendimento médio<br><span id="dash-rendimento" class="text-6xl font-semibold text-amber-500">78%</span></div>
+                <div class="col-span-3 bg-white border border-slate-200 rounded-3xl p-6 shadow-sm">Valor em estoque<br><span id="dash-valor" class="text-6xl font-semibold">R$ 4.872</span></div>
+            </div>
+            <div id="last-processings" class="mt-8 bg-white border border-slate-200 rounded-3xl p-8"></div>
+        </div>
+
+        <!-- PÁGINA PROTEÍNAS -->
+        <div id="page-1" class="page hidden">
+            <div class="flex justify-between mb-8">
+                <h2 class="text-4xl header-font">Proteínas Cadastradas</h2>
+                <button onclick="showNewProteinModal()" class="bg-emerald-500 hover:bg-emerald-600 px-8 py-4 rounded-3xl text-white font-semibold">+ NOVA PROTEÍNA</button>
+            </div>
+            <table class="w-full bg-white border border-slate-200 rounded-3xl overflow-hidden">
+                <thead><tr class="border-b border-slate-200"><th class="p-6 text-left">PROTEÍNA</th><th class="p-6 text-left">CUSTO BRUTO/kg</th><th class="p-6 text-left">SUBCATEGORIAS</th><th class="p-6 text-right">AÇÃO</th></tr></thead>
+                <tbody id="protein-table"></tbody>
+            </table>
+        </div>
+
+        <!-- PÁGINA PROCESSAMENTO -->
+        <div id="page-2" class="page hidden">
+            <h2 class="text-4xl header-font mb-8">Registrar Processamento</h2>
+            <div class="max-w-2xl mx-auto bg-white border border-slate-200 rounded-3xl p-10">
+                <form id="processing-form" onsubmit="handleProcessing(event)">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-slate-500 mb-2">Proteína</label>
+                            <select id="select-protein" class="w-full bg-slate-50 border border-slate-300 rounded-2xl px-5 py-4"></select>
+                        </div>
+                        <div>
+                            <label class="block text-slate-500 mb-2">Subcategoria</label>
+                            <select id="select-subcat" class="w-full bg-slate-50 border border-slate-300 rounded-2xl px-5 py-4">
+                                <option>Porção para 1 pessoa</option>
+                                <option>Porção para 2 pessoas</option>
+                                <option>Petisco</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-slate-500 mb-2">Responsável</label>
+                            <select id="responsavel" class="w-full bg-slate-50 border border-slate-300 rounded-2xl px-5 py-4">
+                                <option value="Carlos">Carlos</option>
+                                <option value="João">João</option>
+                                <option value="Maria">Maria</option>
+                                <option value="Pedro">Pedro</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-slate-500 mb-2">Peso Bruto Inicial (kg)</label>
+                            <input id="peso-bruto" type="number" step="0.001" class="w-full bg-slate-50 border border-slate-300 rounded-2xl px-5 py-4 text-3xl" placeholder="12.450" required>
+                        </div>
+                        <div>
+                            <label class="block text-slate-500 mb-2">Peso Limpo Final (kg)</label>
+                            <input id="peso-limpo" type="number" step="0.001" class="w-full bg-slate-50 border border-slate-300 rounded-2xl px-5 py-4 text-3xl" placeholder="9.850" required>
+                        </div>
+                        <div>
+                            <label class="block text-slate-500 mb-2">Perda de Gelo (kg)</label>
+                            <input id="perda-gelo" type="text" readonly class="w-full bg-emerald-50 border border-emerald-300 rounded-2xl px-5 py-4 text-3xl text-emerald-700 font-semibold text-center">
+                        </div>
+                    </div>
+
+                    <div class="mt-10 bg-slate-50 border border-slate-200 rounded-3xl p-6 grid grid-cols-4 text-center">
+                        <div><p class="text-xs text-slate-500">RENDIMENTO</p><p id="preview-rendimento" class="text-5xl font-semibold text-emerald-600">—</p></div>
+                        <div><p class="text-xs text-slate-500">CUSTO REAL/kg</p><p id="preview-custo-real" class="text-5xl font-semibold">—</p></div>
+                        <div><p class="text-xs text-slate-500">CUSTO TOTAL</p><p id="preview-custo-total" class="text-5xl font-semibold text-amber-500">—</p></div>
+                        <div><p class="text-xs text-slate-500">PERDA GELO</p><p id="preview-perda" class="text-5xl font-semibold text-red-500">—</p></div>
+                    </div>
+
+                    <div class="flex gap-4 mt-8">
+                        <button type="button" onclick="navigateTo(0)" class="flex-1 py-5 rounded-3xl border border-slate-300">Cancelar</button>
+                        <button type="submit" class="flex-1 py-5 bg-emerald-500 rounded-3xl text-white font-semibold">SALVAR PROCESSAMENTO</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- PÁGINA ESTOQUE -->
+        <div id="page-3" class="page hidden">
+            <div class="flex justify-between items-center mb-8">
+                <h2 class="text-4xl header-font">Estoque Atual</h2>
+                <div class="flex gap-3">
+                    <input id="stock-search" placeholder="Buscar..." onkeyup="filterStock()" class="bg-slate-50 border border-slate-300 rounded-3xl px-6 py-3 w-80">
+                    <button onclick="showBaixasHistory()" class="bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-3xl flex items-center gap-2">
+                        <i class="fa-solid fa-clock-rotate-left"></i> Histórico de Baixas
+                    </button>
+                </div>
+            </div>
+            <table class="w-full bg-white border border-slate-200 rounded-3xl">
+                <thead><tr class="border-b border-slate-200">
+                    <th class="p-6 text-left">PROTEÍNA</th>
+                    <th class="p-6 text-left">SUBCATEGORIA</th>
+                    <th class="p-6 text-right">SALDO</th>
+                    <th class="p-6 text-right">CUSTO MÉDIO/kg</th>
+                    <th class="p-6 text-right">VALOR TOTAL</th>
+                    <th class="p-6 text-right">AÇÃO</th>
+                </tr></thead>
+                <tbody id="stock-table"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- MODAIS -->
+    <div id="modal-protein" onclick="if(event.target.id==='modal-protein')hideModals()" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div class="modal bg-white rounded-3xl w-full max-w-md mx-4 p-8 shadow-xl">
+            <h3 class="text-2xl font-semibold mb-6">Nova Proteína</h3>
+            <form onsubmit="saveNewProtein(event)">
+                <input id="new-protein-name" placeholder="Nome da proteína" class="w-full mb-4 bg-slate-50 border border-slate-300 rounded-2xl px-5 py-4" required>
+                <input id="new-protein-custo" type="number" step="0.01" placeholder="Custo bruto R$/kg" class="w-full mb-6 bg-slate-50 border border-slate-300 rounded-2xl px-5 py-4" required>
+                <button type="submit" class="w-full py-4 bg-emerald-500 text-white rounded-3xl font-semibold">Cadastrar</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-baixa" onclick="if(event.target.id==='modal-baixa')hideModals()" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div class="modal bg-white rounded-3xl w-full max-w-md mx-4 p-8 shadow-xl">
+            <h3 class="text-2xl font-semibold mb-6">Dar Baixa</h3>
+            <form onsubmit="handleBaixa(event)">
+                <p id="baixa-info" class="mb-6"></p>
+                <input type="hidden" id="baixa-key">
+                <div class="mb-6">
+                    <label class="block text-slate-500 mb-2">Quantidade (kg)</label>
+                    <input id="baixa-quantidade" type="number" step="0.001" class="w-full bg-slate-50 border border-slate-300 rounded-2xl px-5 py-4 text-3xl" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-slate-500 mb-2">Motivo</label>
+                    <select id="baixa-motivo" class="w-full bg-slate-50 border border-slate-300 rounded-2xl px-5 py-4">
+                        <option>Venda</option><option>Consumo interno</option><option>Desperdício</option><option>Doação</option><option>Outro</option>
+                    </select>
+                </div>
+                <div class="flex gap-4">
+                    <button type="button" onclick="hideModals()" class="flex-1 py-4 border border-slate-300 rounded-3xl">Cancelar</button>
+                    <button type="submit" class="flex-1 py-4 bg-red-500 text-white rounded-3xl">Confirmar Baixa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="modal-historico" onclick="if(event.target.id==='modal-historico')hideModals()" class="hidden fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+        <div class="modal bg-white rounded-3xl w-full max-w-4xl mx-4 p-8 shadow-xl max-h-[90vh] flex flex-col">
+            <div class="flex justify-between mb-6">
+                <h3 class="text-2xl font-semibold">Histórico de Baixas</h3>
+                <button onclick="hideModals()" class="text-3xl text-slate-400">✕</button>
+            </div>
+            <table class="w-full"><thead class="sticky top-0 bg-white"><tr class="border-b"><th class="p-4 text-left">Data</th><th class="p-4 text-left">Proteína</th><th class="p-4 text-left">Subcategoria</th><th class="p-4 text-right">Quantidade</th><th class="p-4 text-left">Motivo</th><th class="p-4 text-right">Valor</th></tr></thead>
+            <tbody id="historico-table"></tbody></table>
+            <p id="historico-vazio" class="hidden text-center py-12 text-slate-400">Nenhuma baixa registrada.</p>
+        </div>
+    </div>
+
+    <script>
+        let proteins = [], processings = [], stock = {}, baixasHistory = [];
+        const SUBCATS = ["Porção para 1 pessoa", "Porção para 2 pessoas", "Petisco"];
+
+        function loadData() {
+            proteins = JSON.parse(localStorage.getItem('proteins')) || [{id:1,nome:"Filé Mignon",custoKgBruto:89.90},{id:2,nome:"Salmão",custoKgBruto:124.50},{id:3,nome:"Picanha",custoKgBruto:68.70}];
+            processings = JSON.parse(localStorage.getItem('processings')) || [];
+            stock = JSON.parse(localStorage.getItem('stock')) || {};
+            baixasHistory = JSON.parse(localStorage.getItem('baixasHistory')) || [];
+            renderAll();
+        }
+
+        function saveData() {
+            localStorage.setItem('proteins', JSON.stringify(proteins));
+            localStorage.setItem('processings', JSON.stringify(processings));
+            localStorage.setItem('stock', JSON.stringify(stock));
+            localStorage.setItem('baixasHistory', JSON.stringify(baixasHistory));
+        }
+
+        function renderAll() {
+            renderDashboard();
+            renderProteinTable();
+            renderProcessingSelects();
+            renderStockTable();
+        }
+
+        function renderDashboard() {
+            document.getElementById('dash-proteinas').textContent = proteins.length;
+            let totalKg = 0, totalValor = 0;
+            Object.values(stock).forEach(s => { totalKg += s.saldoKg || 0; totalValor += s.totalValor || 0; });
+            document.getElementById('dash-estoque-kg').innerHTML = `${totalKg.toFixed(1)} <span class="text-2xl">kg</span>`;
+            document.getElementById('dash-valor').innerHTML = `R$ ${totalValor.toFixed(0)}`;
+
+            const container = document.getElementById('last-processings');
+            container.innerHTML = processings.length ? '' : '<p class="text-slate-400 py-8 text-center">Nenhum processamento ainda.</p>';
+            processings.slice(0,4).forEach(p => {
+                const prot = proteins.find(x => x.id === p.proteinId);
+                const div = document.createElement('div');
+                div.className = "flex justify-between bg-slate-50 border border-slate-200 rounded-2xl p-6 mb-4";
+                div.innerHTML = `<div>${prot ? prot.nome : ''} • ${p.subcatNome}<br><span class="text-xs text-slate-500">Responsável: ${p.responsavel}</span></div><div class="text-right"><span class="text-emerald-600">${p.rendimento.toFixed(1)}%</span><br>${p.pesoLimpo.toFixed(2)} kg • Perda: ${p.perdaGelo.toFixed(2)} kg</div>`;
+                container.appendChild(div);
+            });
+        }
+
+        function renderProteinTable() {
+            const tbody = document.getElementById('protein-table');
+            tbody.innerHTML = proteins.map(p => `<tr class="border-b hover:bg-slate-50"><td class="p-6">${p.nome}</td><td class="p-6 text-emerald-600">R$ ${p.custoKgBruto}</td><td class="p-6">${SUBCATS.map(s=>`<span class="text-xs bg-emerald-100 text-emerald-700 px-3 py-1 rounded-3xl mr-1">${s}</span>`).join('')}</td><td class="p-6 text-right"><button onclick="deleteProtein(${p.id})" class="text-red-400">🗑</button></td></tr>`).join('');
+        }
+
+        function renderProcessingSelects() {
+            const sel = document.getElementById('select-protein');
+            sel.innerHTML = '<option value="">Selecione...</option>' + proteins.map(p => `<option value="${p.id}">${p.nome}</option>`).join('');
+
+            const update = () => {
+                const bruto = parseFloat(document.getElementById('peso-bruto').value) || 0;
+                const limpo = parseFloat(document.getElementById('peso-limpo').value) || 0;
+                const perda = bruto - limpo;
+                document.getElementById('perda-gelo').value = perda >= 0 ? perda.toFixed(3) : '0.000';
+
+                const id = parseInt(sel.value);
+                if (!bruto || !limpo || !id) return;
+
+                const prot = proteins.find(p => p.id === id);
+                const rend = (limpo / bruto) * 100;
+                const custoReal = prot.custoKgBruto / (rend/100);
+
+                document.getElementById('preview-rendimento').innerHTML = `${rend.toFixed(1)}%`;
+                document.getElementById('preview-custo-real').innerHTML = `R$ ${custoReal.toFixed(2)}`;
+                document.getElementById('preview-custo-total').innerHTML = `R$ ${(prot.custoKgBruto * bruto).toFixed(0)}`;
+                document.getElementById('preview-perda').innerHTML = `${perda.toFixed(2)} kg`;
+            };
+
+            document.getElementById('peso-bruto').oninput = update;
+            document.getElementById('peso-limpo').oninput = update;
+            sel.onchange = update;
+        }
+
+        function handleProcessing(e) {
+            e.preventDefault();
+            const proteinId = parseInt(document.getElementById('select-protein').value);
+            const subcatNome = document.getElementById('select-subcat').value;
+            const responsavel = document.getElementById('responsavel').value;
+            const pesoBruto = parseFloat(document.getElementById('peso-bruto').value);
+            const pesoLimpo = parseFloat(document.getElementById('peso-limpo').value);
+            const perdaGelo = Math.max(0, pesoBruto - pesoLimpo);
+
+            const prot = proteins.find(p => p.id === proteinId);
+            const rendimento = (pesoLimpo / pesoBruto) * 100;
+            const custoRealKg = prot.custoKgBruto / (rendimento / 100);
+
+            processings.unshift({id: Date.now(), proteinId, subcatNome, responsavel, pesoBruto, pesoLimpo, perdaGelo, rendimento, custoRealKg, data: new Date().toLocaleDateString('pt-BR')});
+
+            const key = `${proteinId}-${subcatNome}`;
+            if (!stock[key]) stock[key] = {saldoKg:0, custoMedio:0, totalValor:0};
+            const novoSaldo = stock[key].saldoKg + pesoLimpo;
+            const novoValor = stock[key].totalValor + (custoRealKg * pesoLimpo);
+            stock[key] = {saldoKg: novoSaldo, custoMedio: novoValor/novoSaldo, totalValor: novoValor};
+
+            saveData();
+            renderAll();
+            document.getElementById('processing-form').reset();
+            navigateTo(0);
+            alert(`✅ Processamento salvo por ${responsavel}!`);
+        }
+
+        function renderStockTable(filter = '') {
+            const tbody = document.getElementById('stock-table');
+            tbody.innerHTML = Object.keys(stock).map(key => {
+                const [id, sub] = key.split('-');
+                const item = stock[key];
+                const prot = proteins.find(p => p.id === parseInt(id));
+                if (!prot || (filter && !prot.nome.toLowerCase().includes(filter.toLowerCase()) && !sub.toLowerCase().includes(filter.toLowerCase()))) return '';
+                return `<tr class="border-b hover:bg-slate-50"><td class="p-6">${prot.nome}</td><td class="p-6">${sub}</td><td class="p-6 text-right font-semibold text-emerald-600">${item.saldoKg.toFixed(2)} kg</td><td class="p-6 text-right">R$ ${item.custoMedio.toFixed(2)}</td><td class="p-6 text-right font-medium">R$ ${item.totalValor.toFixed(0)}</td><td class="p-6 text-right"><button onclick="showBaixaModal('${key}')" class="bg-red-500 text-white px-5 py-2 rounded-2xl text-sm">Dar Baixa</button></td></tr>`;
+            }).join('');
+        }
+
+        function filterStock() { renderStockTable(document.getElementById('stock-search').value); }
+
+        function showBaixaModal(key) {
+            const [id, sub] = key.split('-');
+            const item = stock[key];
+            const prot = proteins.find(p => p.id === parseInt(id));
+            document.getElementById('baixa-key').value = key;
+            document.getElementById('baixa-info').innerHTML = `<strong>${prot.nome} - ${sub}</strong><br>Saldo atual: <span class="font-semibold">${item.saldoKg.toFixed(2)} kg</span>`;
+            document.getElementById('baixa-quantidade').value = '';
+            document.getElementById('modal-baixa').classList.remove('hidden');
+            document.getElementById('modal-baixa').classList.add('flex');
+        }
+
+        function handleBaixa(e) {
+            e.preventDefault();
+            const key = document.getElementById('baixa-key').value;
+            const qtd = parseFloat(document.getElementById('baixa-quantidade').value);
+            const motivo = document.getElementById('baixa-motivo').value;
+            const item = stock[key];
+            const prot = proteins.find(p => p.id === parseInt(key.split('-')[0]));
+
+            if (qtd > item.saldoKg) return alert("Quantidade maior que o saldo!");
+
+            const valorBaixado = (item.totalValor / item.saldoKg) * qtd;
+            item.saldoKg -= qtd;
+            item.totalValor -= valorBaixado;
+            if (item.saldoKg <= 0) delete stock[key];
+
+            baixasHistory.unshift({data: new Date().toLocaleString('pt-BR'), protein: prot.nome, subcat: key.split('-')[1], quantidade: qtd, motivo, valor: valorBaixado});
+
+            saveData();
+            hideModals();
+            renderAll();
+            alert("✅ Baixa registrada!");
+        }
+
+        function showBaixasHistory() {
+            const tbody = document.getElementById('historico-table');
+            tbody.innerHTML = baixasHistory.map(h => `<tr class="border-b"><td class="p-4">${h.data}</td><td class="p-4">${h.protein}</td><td class="p-4">${h.subcat}</td><td class="p-4 text-right">${h.quantidade.toFixed(2)} kg</td><td class="p-4">${h.motivo}</td><td class="p-4 text-right">R$ ${h.valor.toFixed(2)}</td></tr>`).join('');
+            document.getElementById('historico-vazio').classList.toggle('hidden', baixasHistory.length > 0);
+            document.getElementById('modal-historico').classList.remove('hidden');
+            document.getElementById('modal-historico').classList.add('flex');
+        }
+
+        function saveNewProtein(e) {
+            e.preventDefault();
+            const nome = document.getElementById('new-protein-name').value.trim();
+            const custo = parseFloat(document.getElementById('new-protein-custo').value);
+            if (!nome || !custo) return alert("Preencha todos os campos");
+            const newId = Math.max(0, ...proteins.map(p=>p.id)) + 1;
+            proteins.push({id:newId, nome, custoKgBruto:custo});
+            saveData();
+            hideModals();
+            renderAll();
+        }
+
+        function deleteProtein(id) {
+            if (confirm("Excluir proteína?")) {
+                proteins = proteins.filter(p => p.id !== id);
+                Object.keys(stock).forEach(k => { if (k.startsWith(id+'-')) delete stock[k]; });
+                processings = processings.filter(p => p.proteinId !== id);
+                saveData();
+                renderAll();
+            }
+        }
+
+        function showNewProteinModal() {
+            document.getElementById('modal-protein').classList.remove('hidden');
+            document.getElementById('modal-protein').classList.add('flex');
+        }
+
+        function hideModals() {
+            document.querySelectorAll('.fixed').forEach(m => { m.classList.add('hidden'); m.classList.remove('flex'); });
+        }
+
+        function navigateTo(n) {
+            document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+            document.getElementById(`page-${n}`).classList.remove('hidden');
+        }
+
+        window.onload = loadData;
+    </script>
+</body>
+</html>
